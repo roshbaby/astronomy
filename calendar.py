@@ -16,18 +16,49 @@ class Time:
         assert type(min_) is IntType, 'minute should be integer type'
         assert type(sec_) is IntType or type(sec_) is FloatType,\
                'seconds should be integer/float type'
-        assert hr_ >= 0 and hr_ < 24,\
-               'value {0:d} is invalid for hours'.format(hr_)
-        assert min_ >= 0 and min_ < 60,\
-               'value {0:d} is invalid for minutes'.format(min_)
-        assert sec_ >= 0 and sec_ < 60.0,\
-               'value {0:d} is invalid for seconds'.format(sec_)
         self.hr = hr_
         self.min = min_
         self.sec = sec_
+        self.__canonical()
+
+    """
+    Reduce Time to a canonical form
+    The min and sec will always be positive in this event and bounded between
+    0 and 60.
+    The hr could be negative or positive and is unbounded
+    """
+    def __canonical(self):
+        # Handle rollover or negative values for seconds
+        self.min += int(self.sec) / 60
+        self.sec = self.sec % 60
+        # Handle rollover or negative values for minutes
+        self.hr += self.min / 60
+        self.min = self.min % 60
+
+    def __add__(self,other):
+        return Time(self.hr  + other.hr,  \
+                    self.min + other.min, \
+                    self.sec + other.sec)
+
+    def __iadd__(self,other):
+        self.hr  += other.hr
+        self.min += other.min
+        self.sec += other.sec
+        self.__canonical()
+        return self
+
+    def __sub__(self,other):
+        return Time(self.hr-other.hr, self.min-other.min, self.sec-other.sec)
+
+    def __isub__(self,other):
+        self.hr  -= other.hr
+        self.min -= other.min
+        self.sec -= other.sec
+        self.__canonical()
+        return self
 
     def __unicode__(self):
-        return u'{0:02d}h'.format(self.hr) \
+        return u'{0:+02d}h'.format(self.hr) \
                + u'{0:02d}m'.format(self.min) \
                + u'{0:05.2f}s'.format(self.sec)
 
@@ -123,21 +154,49 @@ class JulianDayNumber:
         return self.jdn - 2400000.5
 
 
-## Julian Day Number for an 'epoch' (i.e. Jan 0.0 UT of given year)
-def jdn_epoch_ut(year):
+""" Julian Day Number for an 'epoch' (i.e. Jan 0.0 UT of given year) """
+def jdn_epoch(year):
     return JulianDayNumber(year-1,12,31,0,0,0)
+
+"""
+\Delta T = Dynamical Time (TD) - Ephemeris Time (UT)
+Chapront and Francou's *approximation*
+@return Delta T as a Time object
+@todo Use Table 10.A and interpolation for years between 1620-2010
+"""
+def deltaT(year):
+    ret_sec = 0
+    t = (year - 2000.0)/100 # Centuries after epoch 2000.0
+    print 't is',t
+    if (year < 948):
+        ret_sec = 2177 + (497+44.1*t)*t
+    else : #if ((year >= 948 and year <= 1600) or (year > 2000))
+        ret_sec = 102 + (102 + 25.3*t)*t
+        print 'ret_sec(1) is ', ret_sec
+        if (year >= 2000 and year <= 2100):
+            ret_sec += 0.37*(year-2100)
+            print 'ret_sec(2) is ', ret_sec
+
+    return Time(0,0,ret_sec)
 
 
 if __name__ == "__main__":
-    #t = Time(24,0,0)
-    #t = Time(23,60,0)
-    #t = Time(23,59,60)
     t = Time(23,59,59)
+    print t
+    print t + Time(1,-59,-59)
+    print t + Time(-1,59,61)
+    t -= Time(-1,59,61)
+    print t
+    t += Time(1,-59,-61)
+    print t
+    t += t
+    print t
+    print Time(-23,-59,-59)
     d = Date(2017,9,15)
     print d
     print d.weekday()
     print Date(-4712,11,12)
-    jdn = JulianDayNumber(Date(2015,9,15),Time(1,2,3))
+    jdn = JulianDayNumber(Date(1975,6,10),Time(8,18,00))
     print jdn.to_date()
     print jdn.to_date().weekday()
-    print
+    print deltaT(2010)
