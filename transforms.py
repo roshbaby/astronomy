@@ -2,20 +2,40 @@ import sys
 from math import sin, cos, tan, asin, atan2, pi, radians
 from angle import Angle
 
-
 DEFAULT_ENCODING = 'UTF-8'
 
 """ Equatorial Coordinates """
 class Equatorial:
-    # alpha_rad - Equatorial Right Ascension in Radians
-    # delta_rad - Equatorial Declination in Radians
-    def __init__(self, alpha_rad_in, delta_rad_in):
-        self.alpha_rad = alpha_rad_in
-        self.delta_rad = delta_rad_in
+    """
+    @param alpha_ Equatorial Right Ascension as an Angle object
+    @param delta_ Equatorial Declination as an Angle object
+    """
+    def __init__(self, alpha_, delta_):
+        assert isinstance(alpha_, Angle) and isinstance(delta_, Angle),\
+               'Arguments to Equatorial must be Angles'
+        self.alpha_angle = alpha_
+        self.delta_angle = delta_
+
+    """
+    Equatorial to Ecliptic conversion
+    Given an Equatorial object and Obliquity of the Ecliptic as an Angle object
+    convert to an Ecliptical object
+    @return Ecliptical object
+    """
+    def to_ecliptical(self, epsilon_):
+        assert isinstance(epsilon_, Angle),'epsilon_ must be Angle'
+        alpha_rad, delta_rad = self.alpha_angle.rads, self.delta_angle.rads
+        epsilon_rad = epsilon_.rads
+        lambda_rad = atan2(sin(alpha_rad)*cos(epsilon_rad)
+                           + tan(delta_rad)*sin(epsilon_rad),
+                           cos(alpha_rad))
+        beta_rad   = asin(sin(delta_rad)*cos(epsilon_rad)
+                          - cos(delta_rad)*sin(epsilon_rad)*sin(alpha_rad))
+        return Ecliptical(Angle(lambda_rad), Angle(beta_rad))
 
     def __unicode__(self):
-        return u'(\u03B1:' + Angle(self.alpha_rad).hms()   \
-               + u', \u03B4:' + Angle(self.delta_rad).dms() + u')'
+        return u'(\u03B1:' + self.alpha_angle.hms() \
+               + u', \u03B4:' + self.delta_angle.dms() + u')'
 
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
@@ -24,74 +44,66 @@ class Equatorial:
 
 """ Ecliptical Coordinates """
 class Ecliptical:
-    # lambda_rad - Ecliptical Longitude in Radians
-    # beta_rad   - Ecliptical Latitude in Radians
-    def __init__(self, lambda_rad_in, beta_rad_in):
-        self.lambda_rad = lambda_rad_in
-        self.beta_rad = beta_rad_in
+    """
+    @param lambda_ Ecliptical Longitude in Radians
+    @param beta_   Ecliptical Latitude in Radians
+    """
+    def __init__(self, lambda_, beta_):
+        assert isinstance(lambda_,Angle) and isinstance(beta_, Angle),\
+               'Arguments to Ecliptical must be Angles'
+        self.lambda_angle = lambda_
+        self.beta_angle = beta_
+
+    """
+    Ecliptic to Equatorial conversion
+    Given an Ecliptical object and Obliquity of the Ecliptic as an Angle object
+    convert to an Equatorial object
+    @return Equatorial object
+    """
+    def to_equatorial(self, epsilon_):
+        assert isinstance(epsilon_, Angle),'epsilon_ must be Angle'
+        lambda_rad, beta_rad = self.lambda_angle.rads, self.beta_angle.rads
+        epsilon_rad = epsilon_.rads
+        alpha_rad = atan2(sin(lambda_rad)*cos(epsilon_rad)
+                          - tan(beta_rad)*sin(epsilon_rad), cos(lambda_rad))
+        delta_rad = asin(sin(beta_rad)*cos(epsilon_rad)
+                         + cos(beta_rad)*sin(epsilon_rad)*sin(lambda_rad))
+        return Equatorial(Angle(alpha_rad), Angle(delta_rad))
 
     def __unicode__(self):
-        return u'(\u03BB:' + Angle(self.lambda_rad).dms() \
-               + u', \u03B2:' + Angle(self.beta_rad).dms() + u')'
+        return u'(\u03BB:' + self.lambda_angle.dms() \
+               + u', \u03B2:' + self.beta_angle.dms() + u')'
 
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
                                     'replace')
 
 
-## Equatorial to Ecliptic conversion
-## Given an Equatorial object and Obliquity of the Ecliptic in radians
-#  convert to Ecliptical
-# @return Ecliptical object
-def equa2ecli(equa, epsilon_rad):
-    alpha_rad, delta_rad = equa.alpha_rad, equa.delta_rad
-    lambda_rad = atan2(sin(alpha_rad)*cos(epsilon_rad)
-                       + tan(delta_rad)*sin(epsilon_rad),
-                      cos(alpha_rad))
-    beta_rad   = asin(sin(delta_rad)*cos(epsilon_rad)
-                      - cos(delta_rad)*sin(epsilon_rad)*sin(alpha_rad))
-    return Ecliptical(lambda_rad, beta_rad)
-
-## Ecliptic to Equatorial conversion
-# Given an Ecliptical object and Obliquity of the Ecliptic in radians
-# convert to Equatorial
-# @return Equatorial object
-def ecli2equa(ecli, epsilon_rad):
-    lambda_rad, beta_rad = ecli.lambda_rad, ecli.beta_rad
-    alpha_rad = atan2(sin(lambda_rad)*cos(epsilon_rad)
-                      - tan(beta_rad)*sin(epsilon_rad),
-                      cos(lambda_rad))
-    delta_rad = asin(sin(beta_rad)*cos(epsilon_rad)
-                     + cos(beta_rad)*sin(epsilon_rad)*sin(lambda_rad))
-    return Equatorial(alpha_rad, delta_rad)
-
-
-
 if __name__ == "__main__":
-    epsilon_j2000_rad = radians(28+(01+34.26/60.0)/60.0)
-    equa1 = Equatorial(0,0)
+    epsilon_j2000 = Angle(radians(28+(1+34.26/60.0)/60.0))
+    equa1 = Equatorial(Angle(0),Angle(0))
     print equa1
-    ecli1 = equa2ecli(equa1, epsilon_j2000_rad)
+    ecli1 = equa1.to_ecliptical(epsilon_j2000)
     print ecli1
-    print ecli2equa(ecli1, epsilon_j2000_rad)
+    print ecli1.to_equatorial(epsilon_j2000)
     print
 
-    equa2 = Equatorial(pi/2,0)
+    equa2 = Equatorial(Angle(pi/2),Angle(0))
     print equa2
-    ecli2 = equa2ecli(equa2, epsilon_j2000_rad)
+    ecli2 = equa2.to_ecliptical(epsilon_j2000)
     print ecli2
-    print ecli2equa(ecli2, epsilon_j2000_rad)
+    print ecli2.to_equatorial(epsilon_j2000)
     print
 
-    equa3 = Equatorial(pi,pi/4)
+    equa3 = Equatorial(Angle(pi),Angle(pi/4))
     print equa3
-    ecli3 = equa2ecli(equa3, epsilon_j2000_rad)
+    ecli3 = equa3.to_ecliptical(epsilon_j2000)
     print ecli3
-    print ecli2equa(ecli3, epsilon_j2000_rad)
+    print ecli3.to_equatorial(epsilon_j2000)
     print
 
-    equa4 = Equatorial(0.75*pi,-pi/4)
+    equa4 = Equatorial(Angle(0.75*pi),Angle(-pi/4))
     print equa4
-    ecli4 = equa2ecli(equa4, epsilon_j2000_rad)
+    ecli4 = equa4.to_ecliptical(epsilon_j2000)
     print ecli4
-    print ecli2equa(ecli4, epsilon_j2000_rad)
+    print ecli4.to_equatorial(epsilon_j2000)

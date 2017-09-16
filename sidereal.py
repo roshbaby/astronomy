@@ -1,6 +1,5 @@
 from angle import *
 from calendar import *
-from types import *
 
 """
 Mean Sidereal Time at Greenwich for a given UT

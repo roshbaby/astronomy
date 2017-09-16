@@ -1,14 +1,13 @@
 import math
 import sys
-from types import *
+from numbers import Number
 
 DEFAULT_ENCODING = 'UTF-8'
 
 class Angle:
     """ Create an Angle in radians """
     def __init__(self, val_in_rad):
-        assert type(val_in_rad) is IntType or type(val_in_rad) is FloatType,\
-               'Value in radians should be integer/float type'
+        assert isinstance(val_in_rad,Number), 'Radians should be a Number'
         self.rads = val_in_rad
 
     def __add__(self, other):
@@ -31,9 +30,10 @@ class Angle:
 
     def __get_sign_str(self):
         sign = math.copysign(1,self.rads) # 1 or -1
-        if (self.rads == 0): return u' '
-        elif (sign < 0):     return u'-'
-        else:                return u'+'
+        if (self.rads == 0): signstr = u' '
+        elif (sign < 0):     signstr = u'-'
+        else:                signstr = u'+'
+        return signstr
 
     """ Remove multiples of 2 pi to get a value between 0 and 2 pi"""
     def canonical(self):
@@ -53,7 +53,8 @@ class Angle:
         return self.__get_sign_str()               \
                + u'{0:03d}\u00B0'.format(int(dgs)) \
                + u'{0:02d}\u2032'.format(int(mns)) \
-               + u'{0:05.2f}'.format(scs).replace(u'.',u'\u2033')
+               + u'{0:05.2f}\u2033'.format(scs)
+               #+ u'{0:05.2f}'.format(scs).replace(u'.',u'\u2033')
 
     """ Return unicode string representation in HMS form """
     def hms(self):
@@ -91,4 +92,6 @@ if __name__ == "__main__":
     print myangle, myangle.dms(), myangle.canonical()
     print myangle.hms()
     print Angle(0)
+    print Angle(1)
+    print Angle(1.0)
     print repr(Angle(math.pi))

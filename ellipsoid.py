@@ -1,6 +1,5 @@
 import math
 from angle import Angle
-from types import *
 from numbers import Number
 
 class Ellipsoid:
