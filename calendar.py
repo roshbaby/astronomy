@@ -1,6 +1,7 @@
 import math
 import sys
 from types import *
+from numbers import Number
 
 DEFAULT_ENCODING = 'UTF-8'
 
@@ -10,12 +11,21 @@ weekdays = [u'Sunday', u'Monday', u'Tuesday', u'Wednesday',
 months = [u'Jan', u'Feb', u'Mar', u'Apr', u'May', u'Jun',
           u'Jul', u'Aug', u'Sep', u'Oct', u'Nov', u'Dec']
 
+days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+"""
+@caution Works only for the Proleptic Gregorian Dates
+"""
+def is_leap_year(year_):
+    assert isinstance(year_, Number),'year_ should be a Number'
+    return (year_ % 4) == 0 and \
+           ((year_ % 100) != 0 or (year_ % 400) == 0)
+
 class Time:
     def __init__(self, hr_,min_,sec_):
         assert type(hr_) is IntType, 'hour should be integer type'
         assert type(min_) is IntType, 'minute should be integer type'
-        assert type(sec_) is IntType or type(sec_) is FloatType,\
-               'seconds should be integer/float type'
+        assert isinstance(sec_, Number),'seconds should be a Number'
         self.hr = hr_
         self.min = min_
         self.sec = sec_
@@ -36,9 +46,7 @@ class Time:
         self.min = self.min % 60
 
     def __add__(self,other):
-        return Time(self.hr  + other.hr,  \
-                    self.min + other.min, \
-                    self.sec + other.sec)
+        return Time(self.hr+other.hr, self.min+other.min, self.sec+other.sec)
 
     def __iadd__(self,other):
         self.hr  += other.hr
@@ -73,8 +81,12 @@ class Date:
         assert type(month_) is IntType, 'month should be integer type'
         assert type(day_) is IntType, 'day should be integer type'
         assert month_ > 0 and month_ < 13, \
-               '{0:d} is not valid month'.format(month_)
-        assert day_ >= 0, 'Day values should be zero/positive'
+               '{0:d} is not a valid month'.format(month_)
+        assert day_ >= 0,'Day should be non negative'
+        max_days = days[month_-1]
+        # Leap Year Correction for February
+        if is_leap_year(year_) and month_ == 2: max_days += 1
+        assert day_ <= max_days,'{0:d} is invalid value for day'.format(day_)
         self.year = year_
         self.month = month_
         self.day = day_
@@ -176,7 +188,6 @@ def deltaT(year):
         if (year >= 2000 and year <= 2100):
             ret_sec += 0.37*(year-2100)
             print 'ret_sec(2) is ', ret_sec
-
     return Time(0,0,ret_sec)
 
 
@@ -192,6 +203,10 @@ if __name__ == "__main__":
     t += t
     print t
     print Time(-23,-59,-59)
+    #d = Date(2017,9,31)
+    print Date(2016,2,29)
+    print Date(2000,2,29)
+    #print Date(1900,2,29)
     d = Date(2017,9,15)
     print d
     print d.weekday()

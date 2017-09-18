@@ -3,7 +3,7 @@ from calendar import *
 
 """
 Mean Sidereal Time at Greenwich for a given UT
-@return Greenwich MST as an Angle object
+@return Greenwich MST as a Longitude object
 """
 def theta_0(jdnumber):
     assert isinstance(jdnumber, JulianDayNumber), 'Invalid Julian Day Number'
@@ -12,7 +12,7 @@ def theta_0(jdnumber):
               (0.000387933 - T/38710000.0)*T*T
     ret_deg = math.fmod(ret_deg, 360) # fmod preferred over % operator for floats
     if ret_deg < 0: ret_deg += 360
-    return Angle(math.radians(ret_deg))
+    return Longitude(math.radians(ret_deg))
 
 if __name__ == "__main__":
     jdn = JulianDayNumber(Date(2017,9,15),Time(22,20,11))

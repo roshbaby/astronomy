@@ -4,11 +4,15 @@ from numbers import Number
 
 DEFAULT_ENCODING = 'UTF-8'
 
+"""
+Angle class that can accumulate an angle value in radians
+"""
 class Angle:
     """ Create an Angle in radians """
     def __init__(self, val_in_rad):
-        assert isinstance(val_in_rad,Number), 'Radians should be a Number'
+        assert isinstance(val_in_rad, Number), 'Radians should be a Number'
         self.rads = val_in_rad
+        self.canonical()
 
     def __add__(self, other):
         assert isinstance(other, Angle), 'Unsupported type for addition'
@@ -17,6 +21,7 @@ class Angle:
     def __iadd__(self,other):
         assert isinstance(other, Angle), 'Unsupported type for i-addition'
         self.rads += other.rads
+        self.canonical()
         return self
 
     def __sub__(self,other):
@@ -26,6 +31,7 @@ class Angle:
     def __isub__(self,other):
         assert isinstance(other, Angle), 'Unsupported type for i-subtraction'
         self.rads -= other.rads
+        self.canonical()
         return self
 
     def __get_sign_str(self):
@@ -35,12 +41,9 @@ class Angle:
         else:                signstr = u'+'
         return signstr
 
-    """ Remove multiples of 2 pi to get a value between 0 and 2 pi"""
+    """ Convert the rads to a canonical form """
     def canonical(self):
-        two_pis = math.pi*2
-        self.rads = math.fmod(self.rads,two_pis)
-        if self.rads < 0:
-            self.rads += two_pis
+        # Do nothing for the Angle class
         return self
 
     """ Return unicode string representation in DMS form """
@@ -77,13 +80,42 @@ class Angle:
                                     'replace')
 
 
+"""
+Angle subclass Longitude always keeps the radians value between 0 and 2pi
+Useful for longitudes, Right Ascensions etc.
+"""
+class Longitude(Angle):
+    """ Remove multiples of 2 pi from rads to get a value between 0 and 2 pi"""
+    def canonical(self):
+        two_pis = math.pi*2
+        self.rads = math.fmod(self.rads,two_pis)
+        if self.rads < 0:
+            self.rads += two_pis
+        return self
+
+
+"""
+Angle subclass Latitude always keeps the radians value between -pi and pi
+Useful for latitudes, declinations, etc.
+"""
+class Latitude(Angle):
+    """ Just check that the rads lie between -pi/2 and +pi/2 """
+    def canonical(self):
+        assert math.fabs(self.rads) <= math.pi/2,'Latitude cannot exceed pi/2 radians either side of 0'
+        return self
+
+    """ Override hms to raise exception """
+    def hms(self):
+        raise RuntimeError('hms not supported for Latitude')
+
+
 if __name__ == "__main__":
     myangle = Angle(-math.radians(math.pi))
     print str(myangle)
     print myangle
     print myangle.rads
     print str(Angle(math.pi))
-    print str(Angle(math.pi/2))
+    print Angle(math.pi/2)
     myangle = Angle(math.pi) + Angle(math.pi/2)
     print myangle
     myangle += Angle(math.pi/2)
@@ -95,3 +127,16 @@ if __name__ == "__main__":
     print Angle(1)
     print Angle(1.0)
     print repr(Angle(math.pi))
+    longitude = Longitude(-math.radians(math.pi))
+    print longitude
+    try:
+        latitude = Latitude(-math.pi)
+    except:
+        print sys.exc_info()[0], sys.exc_info()[1]
+
+    latitude = Latitude(-math.pi/2)
+    print latitude
+    try:
+        latitude.hms()
+    except:
+        print sys.exc_info()[0], sys.exc_info()[1]
