@@ -44,27 +44,27 @@ if __name__ == "__main__":
     try:
         ipol = Interpolate((0,1))
     except AssertionError as e:
-        print e
+        print 'Error:', e
 
     try:
         ipol = Interpolate([(0,1),(1,2)])
     except AssertionError as e:
-        print e
+        print 'Error:', e
 
     try:
         ipol = Interpolate([(0,1),1,(2,3)])
     except AssertionError as e:
-        print e
+        print 'Error:', e
 
     try:
         ipol = Interpolate([(0,1),(0,2),(2,3)])
     except AssertionError as e:
-        print e
+        print 'Error:', e
 
     try:
         ipol = Interpolate([(0,1),(1,2),(1,3)])
     except AssertionError as e:
-        print e
+        print 'Error:', e
 
     ipol = Interpolate([(0,0),(1,1),(2,4)]) # y = x^2
     print ipol.compute(1.1)

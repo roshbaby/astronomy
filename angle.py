@@ -101,7 +101,7 @@ Useful for latitudes, declinations, etc.
 class Latitude(Angle):
     """ Just check that the rads lie between -pi/2 and +pi/2 """
     def canonical(self):
-        assert math.fabs(self.rads) <= math.pi/2,'Latitude cannot exceed pi/2 radians either side of 0'
+        assert math.fabs(self.rads) <= math.pi/2, 'Latitude cannot exceed pi/2 radians either side of 0'
         return self
 
     """ Override hms to raise exception """

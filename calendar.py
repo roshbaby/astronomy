@@ -13,19 +13,33 @@ months = [u'Jan', u'Feb', u'Mar', u'Apr', u'May', u'Jun',
 
 days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
+
 """
-@caution Works only for the Proleptic Gregorian Dates
+Determine if the given date falls in the Julian or Gregorian calendar
 """
-def is_leap_year(year_):
-    assert isinstance(year_, Number),'year_ should be a Number'
-    return (year_ % 4) == 0 and \
-           ((year_ % 100) != 0 or (year_ % 400) == 0)
+def is_gregorian(year_, month_, day_):
+    return (year_ > 1582) or (year_ == 1582 and month_ > 10) \
+           or (year_ == 1582 and month_ == 10 and day_ >= 15)
+
+"""
+Determine if the given date falls in a leap year
+"""
+def is_leap_year(year_, month_, day_):
+    assert isinstance(year_, Number)      \
+           and isinstance(month_, Number) \
+           and isinstance(day_, Number),  \
+           'year_, month_, and day_ should be Numbers'
+
+    return (year_ % 4) == 0 and                        \
+           ((not is_gregorian(year_, month_, day_)) or \
+            (year_ % 100) != 0                      or \
+            (year_ % 400) == 0)
 
 class Time:
     def __init__(self, hr_,min_,sec_):
         assert type(hr_) is IntType, 'hour should be integer type'
         assert type(min_) is IntType, 'minute should be integer type'
-        assert isinstance(sec_, Number),'seconds should be a Number'
+        assert isinstance(sec_, Number), 'seconds should be a Number'
         self.hr = hr_
         self.min = min_
         self.sec = sec_
@@ -82,11 +96,11 @@ class Date:
         assert type(day_) is IntType, 'day should be integer type'
         assert month_ > 0 and month_ < 13, \
                '{0:d} is not a valid month'.format(month_)
-        assert day_ >= 0,'Day should be non negative'
+        assert day_ >= 0, 'Day should be non negative'
         max_days = days[month_-1]
         # Leap Year Correction for February
-        if is_leap_year(year_) and month_ == 2: max_days += 1
-        assert day_ <= max_days,'{0:d} is invalid value for day'.format(day_)
+        if is_leap_year(year_, month_, day_) and month_ == 2: max_days += 1
+        assert day_ <= max_days, '{0:d} is invalid value for day'.format(day_)
         self.year = year_
         self.month = month_
         self.day = day_
@@ -96,8 +110,7 @@ class Date:
     (i.e. 15 Oct 1582 or later)
     """
     def is_gregorian(self):
-        return (self.year > 1582) or (self.year == 1582 and self.month > 10) \
-               or (self.year == 1582 and self.month == 10 and self.day >= 15)
+        return is_gregorian(self.year, self.month, self.day)
 
     """ Day of the week for the Date """
     def weekday(self):
@@ -203,13 +216,28 @@ if __name__ == "__main__":
     t += t
     print t
     print Time(-23,-59,-59)
-    #d = Date(2017,9,31)
+
+    try:
+        d = Date(2017,9,31)
+    except AssertionError as e:
+        print 'Error:', e
+
     print Date(2016,2,29)
     print Date(2000,2,29)
-    #print Date(1900,2,29)
+
+    try:
+        print Date(1900,2,29)
+    except AssertionError as e:
+        print 'Error:', e
+
+    print Date(1580, 2, 29) #
+    print Date(1500, 2, 29) # Leap Year in Julian calendar only
+    print Date(1500, 2, 29).is_gregorian()
+
     d = Date(2017,9,15)
     print d
     print d.weekday()
+    print d.is_gregorian() # Call class method
     print Date(-4712,11,12)
     jdn = JulianDayNumber(Date(1975,6,10),Time(8,18,00))
     print jdn.to_date()

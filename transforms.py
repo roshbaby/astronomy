@@ -23,7 +23,7 @@ class Equatorial:
     @return Ecliptical object
     """
     def to_ecliptical(self, epsilon_):
-        assert isinstance(epsilon_, Angle),'epsilon_ must be Angle'
+        assert isinstance(epsilon_, Angle), 'epsilon_ must be Angle'
         alpha_rad, delta_rad = self.alpha_angle.rads, self.delta_angle.rads
         epsilon_rad = epsilon_.rads
         lambda_rad = atan2(sin(alpha_rad)*cos(epsilon_rad)
@@ -61,7 +61,7 @@ class Ecliptical:
     @return Equatorial object
     """
     def to_equatorial(self, epsilon_):
-        assert isinstance(epsilon_, Angle),'epsilon_ must be Angle'
+        assert isinstance(epsilon_, Angle), 'epsilon_ must be Angle'
         lambda_rad, beta_rad = self.lambda_angle.rads, self.beta_angle.rads
         epsilon_rad = epsilon_.rads
         alpha_rad = atan2(sin(lambda_rad)*cos(epsilon_rad)
