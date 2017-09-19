@@ -9,19 +9,25 @@ class Interpolate:
     @param xyvalues_ list of (x,y) tuples (at least 3 tuples in the list)
     """
     def __init__(self, xyvalues_,):
-        assert type(xyvalues_) is list, 'xyvalues_ shouldbe a list'
-        assert len(xyvalues_) > 2, 'xyvalues_ should at least be a 3 element list'
+        assert isinstance(xyvalues_, list), 'xyvalues_ should be a list'
+        assert len(xyvalues_) > 2, 'xyvalues_ should have at least 3 elements'
         self.xyvalues = xyvalues_
 
         # Check that all elements are tuples
         for i in range(len(xyvalues_)):
-            assert type(xyvalues_[i]) is tuple, 'Item at index {0:d} in xyvalues_ is not a tuple. xyvalues_ should contain only tuples'.format(i)
+            assert isinstance(xyvalues_[i], tuple), \
+                   'Item at index {0:d} in xyvalues_ is not a tuple.' \
+                   ' xyvalues_ should contain only tuples.'.format(i)
+            assert len(xyvalues_[i]) == 2, \
+                   'Item at index {0:d} in xyvalues_ is not a 2 element tuple.' \
+                   ' xyvalues_ should contain only 2 element tuples.'.format(i)
 
         # Check that all x values are unique
         for i in range(len(xyvalues_)-1):
             for j in range(i+1, len(xyvalues_)):
-                assert xyvalues_[i][0] != xyvalues_[j][0], 'x values at indexes {0:d} and {1:d} are identical. x values must be unique'.format(i,j)
-
+                assert xyvalues_[i][0] != xyvalues_[j][0], \
+                       'x values at indexes {0:d} and {1:d} are identical.'\
+                       ' x values must be unique.'.format(i,j)
 
     """
     Intepolate for the given x value
@@ -30,46 +36,35 @@ class Interpolate:
     def compute(self, x_inter):
         # Generate the Li coefficients and consume them as we go along
         y_inter = 0.0
-        for i in range(len(self.xyvalues)):
+        for ival in self.xyvalues:
             L = 1.0
-            for j in range(len(self.xyvalues)):
-                if j != i:
-                    L *= float(x_inter - self.xyvalues[j][0]) /         \
-                         float(self.xyvalues[i][0] - self.xyvalues[j][0])
-            y_inter += L*self.xyvalues[i][1]
+            for jval in self.xyvalues:
+                if jval != ival:
+                    L *= float(x_inter - jval[0]) / float(ival[0] - jval[0])
+            y_inter += L*ival[1]
         return y_inter
 
 
 if __name__ == "__main__":
-    try:
-        ipol = Interpolate((0,1))
-    except AssertionError as e:
-        print 'Error:', e
+    data = [
+        (0,1),                      # Not a list
+        [ (0,1), (1,2) ],           # 2 element list
+        [ (0,1), 1, (2,3) ],        # Not all tuples
+        [ (3,4), (4,5), (6,7),  (0,1,2) ], # One 3 element tuple
+        [ (0,1), (0,2), (2,3) ],    # identical x values at elements 0, 1
+        [ (0,1), (1,2), (1,3) ]     # identical x values at elements 1, 2
+    ]
 
-    try:
-        ipol = Interpolate([(0,1),(1,2)])
-    except AssertionError as e:
-        print 'Error:', e
-
-    try:
-        ipol = Interpolate([(0,1),1,(2,3)])
-    except AssertionError as e:
-        print 'Error:', e
-
-    try:
-        ipol = Interpolate([(0,1),(0,2),(2,3)])
-    except AssertionError as e:
-        print 'Error:', e
-
-    try:
-        ipol = Interpolate([(0,1),(1,2),(1,3)])
-    except AssertionError as e:
-        print 'Error:', e
+    for item in data:
+        try:
+            ipol = Interpolate(item)
+        except AssertionError as e:
+            print 'Error:', e
 
     ipol = Interpolate([(0,0),(1,1),(2,4)]) # y = x^2
-    print ipol.compute(1.1)
-    print ipol.compute(2.1)
-    print ipol.compute(3.1)
+    print ipol.compute(1.1)  # 1.21
+    print ipol.compute(2.1)  # 4.41
+    print ipol.compute(3.1)  # 9.61
 
     # Test for sin values of degrees
     isinpol = Interpolate(
@@ -82,6 +77,6 @@ if __name__ == "__main__":
             (33.05, 0.5453707057)
         ]
     )
-    print isinpol.compute(30.0)
-    print isinpol.compute(0.0)
-    print isinpol.compute(90.0)
+    print isinpol.compute(30.0)  # 0.5
+    print isinpol.compute(0.0)   # 0.0 - really outside interpolation range
+    print isinpol.compute(90.0)  # 1.0 - really outside interpolation range

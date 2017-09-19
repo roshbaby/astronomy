@@ -4,18 +4,28 @@ from angle import *
 
 DEFAULT_ENCODING = 'UTF-8'
 
-""" Equatorial Coordinates """
-class Equatorial:
+"""
+A Spherical Coordinate is a Longitude and Latitude pair.
+It is a glorified tuple, but useful for type checking inputs to functions and
+constructors.
+"""
+class SphCoord:
     """
-    @param alpha_ Equatorial Right Ascension as an Angle object
-    @param delta_ Equatorial Declination as an Angle object
+    @param alpha_ The Longitude (can also be Right Ascension or Azimuth)
+    @param delta_ The Latitude (can also be Declination or Altitude)
     """
-    def __init__(self, alpha_, delta_):
-        assert isinstance(alpha_, Longitude), 'alpha_ must be a Longitude'
-        assert isinstance(delta_, Latitude), 'delta_ must be a Longitude'
-        self.alpha_angle = alpha_
-        self.delta_angle = delta_
+    def __init__(self, a_, b_):
+        assert isinstance(a_, Longitude), 'a_ must be a Longitude'
+        assert isinstance(b_, Latitude), 'b_ must be a Latitude'
+        self.a = a_ # Can be used as an R.A., longitude, azimuth
+        self.b = b_ # can be used as a declination, latitude, or altitude
 
+
+"""
+Equatorial Coordinates
+A Right Ascension and Declination pair
+"""
+class Equatorial(SphCoord):
     """
     Equatorial to Ecliptic conversion
     Given an Equatorial object and Obliquity of the Ecliptic as an Angle object
@@ -24,7 +34,7 @@ class Equatorial:
     """
     def to_ecliptical(self, epsilon_):
         assert isinstance(epsilon_, Angle), 'epsilon_ must be Angle'
-        alpha_rad, delta_rad = self.alpha_angle.rads, self.delta_angle.rads
+        alpha_rad, delta_rad = self.a.rads, self.b.rads
         epsilon_rad = epsilon_.rads
         lambda_rad = atan2(sin(alpha_rad)*cos(epsilon_rad)
                            + tan(delta_rad)*sin(epsilon_rad),
@@ -34,26 +44,19 @@ class Equatorial:
         return Ecliptical(Longitude(lambda_rad), Latitude(beta_rad))
 
     def __unicode__(self):
-        return u'(\u03B1:' + self.alpha_angle.hms() \
-               + u', \u03B4:' + self.delta_angle.dms() + u')'
+        return u'(\u03B1:' + self.a.hms() \
+               + u', \u03B4:' + self.b.dms() + u')'
 
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
                                     'replace')
 
 
-""" Ecliptical Coordinates """
-class Ecliptical:
-    """
-    @param lambda_ Ecliptical Longitude in Radians
-    @param beta_   Ecliptical Latitude in Radians
-    """
-    def __init__(self, lambda_, beta_):
-        assert isinstance(lambda_,Angle), 'lambda_ must be a Longitude'
-        assert isinstance(beta_, Angle), 'beta_ must be a Latitude'
-        self.lambda_angle = lambda_
-        self.beta_angle = beta_
-
+"""
+Ecliptical Coordinates
+A Longitude and Latitude pair
+"""
+class Ecliptical(SphCoord):
     """
     Ecliptic to Equatorial conversion
     Given an Ecliptical object and Obliquity of the Ecliptic as an Angle object
@@ -62,7 +65,7 @@ class Ecliptical:
     """
     def to_equatorial(self, epsilon_):
         assert isinstance(epsilon_, Angle), 'epsilon_ must be Angle'
-        lambda_rad, beta_rad = self.lambda_angle.rads, self.beta_angle.rads
+        lambda_rad, beta_rad = self.a.rads, self.b.rads
         epsilon_rad = epsilon_.rads
         alpha_rad = atan2(sin(lambda_rad)*cos(epsilon_rad)
                           - tan(beta_rad)*sin(epsilon_rad), cos(lambda_rad))
@@ -71,8 +74,8 @@ class Ecliptical:
         return Equatorial(Longitude(alpha_rad), Latitude(delta_rad))
 
     def __unicode__(self):
-        return u'(\u03BB:' + self.lambda_angle.dms() \
-               + u', \u03B2:' + self.beta_angle.dms() + u')'
+        return u'(\u03BB:' + self.a.dms() \
+               + u', \u03B2:' + self.b.dms() + u')'
 
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
@@ -106,6 +109,20 @@ class AltAzimuthal:
 
 
 if __name__ == "__main__":
+    ## Spherical Coordinate Tests
+    data = [
+        (0, math.pi/2), # Not Longitudes or Latitudes
+        (Latitude(0), Latitude(math.pi/2)), # alpha is not a Longitude
+        (Longitude(0), Longitude(math.pi/2)), # delta is not a Latitude
+        (Longitude(0), Angle(math.pi/2)) # delta is not a Latitude
+    ]
+    for tup in data:
+        try:
+            sph = SphCoord(tup[0], tup[1])
+        except AssertionError as e:
+            print 'Error:', e
+    print
+
     epsilon_j2000 = Angle(radians(28+(1+34.26/60.0)/60.0))
     equa1 = Equatorial(Longitude(0),Latitude(0))
     print equa1

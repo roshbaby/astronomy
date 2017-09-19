@@ -259,7 +259,6 @@ deltaT_y2k_table = [
 \Delta T = Dynamical Time (TD) - Ephemeris Time (UT)
 Chapront and Francou's *approximation*
 @return Delta T as a Time object
-@todo Use Table 10.A and interpolation for years between 1620-2010
 """
 def deltaT(year):
     #print '\nyear is', year

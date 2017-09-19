@@ -131,12 +131,12 @@ if __name__ == "__main__":
     print longitude
     try:
         latitude = Latitude(-math.pi)
-    except:
-        print sys.exc_info()[0], sys.exc_info()[1]
+    except AssertionError as e:
+        print 'Error:', e
 
     latitude = Latitude(-math.pi/2)
     print latitude
     try:
         latitude.hms()
-    except:
-        print sys.exc_info()[0], sys.exc_info()[1]
+    except RuntimeError as e:
+        print 'Error:', e

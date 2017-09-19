@@ -178,6 +178,13 @@ class JulianDayNumber:
     def get_mjdn(self):
         return self.jdn - 2400000.5
 
+    def __unicode__(self):
+        return u'{0:f}'.format(self.jdn)
+
+    def __str__(self):
+        return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
+                                    'replace')
+
 
 """ Julian Day Number for an 'epoch' (i.e. Jan 0.0 UT of given year) """
 def jdn_epoch(year):
@@ -222,3 +229,5 @@ if __name__ == "__main__":
     jdn = JulianDayNumber(Date(1975,6,10),Time(8,18,00))
     print jdn.to_date()
     print jdn.to_date().weekday()
+
+    print JulianDayNumber(Date(2000,1,1), Time(12,0,0))
