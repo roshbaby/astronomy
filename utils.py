@@ -1,6 +1,22 @@
 from math import sin, cos, tan, atan2, sqrt, pi, degrees, radians, fabs
 from angle import Angle, Latitude, Longitude
 from transforms import SphCoord
+from interpolation import Inter3polate
+
+
+"""
+Compute the correction due to refraction to altitude
+@param alt_ The *apparent* altitude as an Angle object
+"""
+def refraction(alti_):
+    assert isinstance(alti_, Angle), 'alti_ should be an Angle'
+    alti_degs = degrees(alti_.rads)
+    denom = tan(radians(alti_degs + 7.31/(alti_degs+4.4)))
+    R = 1/denom # units of arc-minutes
+    #return Angle(radians((R + 0.001351521673756295)/60))
+    R -= 0.06*sin(radians(14.7*R/60+13)) # units of arc-minutes
+    return Angle(radians(R/60))
+
 
 """
 Compute the angular separation between two spherical coordinates
@@ -26,10 +42,11 @@ def angular_separation(sph1,sph2):
 """
 Computes the least angular separation between two celestial objects
 using interpolation
-@param coords1 a list of 3 SphCoords for object 1 (equidistant times)
-@param coords2 a list of 3 SphCoords for object 2 (equidistant times)
+@param coords1 List of 3 SphCoords for object 1 (equidistant times)
+@param coords2 List of 3 SphCoords for object 2 (equidistant times)
+@param precision The precision at which to terminate the iteration
 """
-def least_angular_separation(coords1, coords2):
+def least_angular_separation(coords1, coords2, precision):
     assert isinstance(coords1, list) and isinstance(coords2, list), \
            'coords must be lists'
     # CAUTION: Pythonism below!
@@ -38,6 +55,7 @@ def least_angular_separation(coords1, coords2):
     for sph1, sph2 in zip(coords1, coords2):
         assert isinstance(sph1, SphCoord) and isinstance(sph2, SphCoord), \
                'Elements of coords must be SphCoords'
+    assert precision != 0, 'precision should not be 0'
 
     u_list = []
     v_list = []
@@ -56,34 +74,32 @@ def least_angular_separation(coords1, coords2):
     #print 'u_list:', u_list
     #print 'v_list:', v_list
 
-    # @todo Convert the following interpolation into its own class
-    ua = u_list[1]-u_list[0] # First difference
-    ub = u_list[2]-u_list[1] # First difference
-    uc = ub-ua               # Second difference
-    va = v_list[1]-v_list[0] # First difference
-    vb = v_list[2]-v_list[1] # First difference
-    vc = vb-va               # Second difference
-    n = 0.0                  # Corresponds to u_list[1] and v_list[1]
-    precision = 1e-5         # Corresponds to 0.9sec for interval of 1 day
+    # For interpolation, treat the u_list as the values of y corresponding to
+    # x = -1,0,1. Ditto for v_list
+    u_ipol = Inter3polate( zip([-1,0,1], u_list) )
+    v_ipol = Inter3polate( zip([-1,0,1], v_list) )
+    n = 0.0  # Interpolating factor around the central value
     while (True):
-        # Interpolate for u, v
-        u = u_list[1] + (n/2.0)*(ua+ub+n*uc)
-        v = v_list[1] + (n/2.0)*(va+vb+n*vc)
+        # Interpolate for u and v around the central value of x=0
+        u = u_ipol.compute(0+n)
+        v = v_ipol.compute(0+n)
         # Determine variations in u, v
-        u_ = (u_list[2]-u_list[0])/2.0 + n*uc
-        v_ = (v_list[2]-v_list[0])/2.0 + n*vc
+        u_ = (u_list[2]-u_list[0])/2.0 + n*u_ipol.c
+        v_ = (v_list[2]-v_list[0])/2.0 + n*v_ipol.c
         #print 'n:', n, 'u:', u, 'v:', v, 'u_:', u_, 'v_:', v_
         # Correction to n
         n_ = -(u*u_ + v*v_)/float(u_**2 + v_**2)
         #print 'n_:', n_
         n += n_
-        if fabs(n_) <= precision:
+        if fabs(n_) <= fabs(precision):
             break
-    u = u_list[1] + (n/2.0)*(ua+ub+n*uc)
-    v = v_list[1] + (n/2.0)*(va+vb+n*vc)
+    # Compute the final values of u and v
+    u = u_ipol.compute(0+n)
+    v = v_ipol.compute(0+n)
     #print 'final n:', n, 'u:', u, 'v:', v
-
+    #@todo return final 'n' as well
     return Angle(radians(sqrt(u**2+v**2)/3600))
+
 
 """
 Relative Position Angle
@@ -103,11 +119,17 @@ def relative_position_angle(ref, obj):
     rpa = atan2(sin(dalpha), cos(delta2)*tan(delta1)-sin(delta2)*cos(dalpha))
     return Angle(rpa)
 
+
 def proper_motion_correction():
     assert False, '@todo To Be Implemented'
 
 
 if __name__ == "__main__":
+    ## Refraction tests
+    print refraction(Angle(0))
+    print refraction(Angle(pi/4))
+    print refraction(Angle(pi/2))
+
     ## Angular Separation Tests
     # List of (alpha1, delta1, alpha2, delta2) tuples
     data = [
@@ -136,8 +158,10 @@ if __name__ == "__main__":
             print angular_separation(sph1,sph2)
         except Exception as e:
             print 'Error:', e
+    print
 
     ## Least Angular Separation
+    precision = 1e-5          # Corresponds to 0.9sec for interval of 1 day
     data = [
         (0, []),              # coord1 not a list
         ([], 0),              # coord2 not a list
@@ -148,7 +172,7 @@ if __name__ == "__main__":
     ]
     for tup in data:
         try:
-            least_angular_separation(tup[0], tup[1])
+            least_angular_separation(tup[0], tup[1], precision)
         except AssertionError as e:
             print 'Error:', e
 
@@ -188,8 +212,13 @@ if __name__ == "__main__":
             Latitude(radians(10+(34+53.9/60)/60.0))
         )
     ]
-    print least_angular_separation(mercury_coords, saturn_coords) # 3'44"
-    print least_angular_separation(saturn_coords, mercury_coords) # 3'44"
+    try:
+        least_angular_separation(mercury_coords, saturn_coords, 0)
+    except AssertionError as e:
+        print 'Error:', e
+
+    print least_angular_separation(mercury_coords, saturn_coords, precision) # 3'44"
+    print least_angular_separation(saturn_coords, mercury_coords, precision) # 3'44"
 
     for m,s in zip(mercury_coords,saturn_coords):
         print relative_position_angle(m,s)

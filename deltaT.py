@@ -289,7 +289,7 @@ def deltaT(year):
             deltaT_table_slice = deltaT_table[my_index-2:my_index+3]
             #print 'slice is', str(my_index-2) + ':' + str(my_index+3)
 
-        ipol = Interpolate(deltaT_table_slice)
+        ipol = LagrangeInterpolate(deltaT_table_slice)
         ret_sec = ipol.compute(year)
 
     else:
