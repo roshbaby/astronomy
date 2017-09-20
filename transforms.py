@@ -28,8 +28,7 @@ A Right Ascension and Declination pair
 class Equatorial(SphCoord):
     """
     Equatorial to Ecliptic conversion
-    Given an Equatorial object and Obliquity of the Ecliptic as an Angle object
-    convert to an Ecliptical object
+    @param epsilon_ The obliquity of the Ecliptic as an Angle object
     @return Ecliptical object
     """
     def to_ecliptical(self, epsilon_):
@@ -42,6 +41,22 @@ class Equatorial(SphCoord):
         beta_rad   = asin(sin(delta_rad)*cos(epsilon_rad)
                           - cos(delta_rad)*sin(epsilon_rad)*sin(alpha_rad))
         return Ecliptical(Longitude(lambda_rad), Latitude(beta_rad))
+
+    """
+    Equatorial to AltAzimuthal conversion
+    @param lati_ The observer's geographic latitude as a Latitude object
+    @param hangle_ The hour angle as a Longitude object
+    @return AltAzimuthal object
+    """
+    def to_altazimuthal(self, lati_, hangle_):
+        assert isinstance(lati_, Latitude), 'lati_ must be a Latitude'
+        assert isinstance(hangle_, Longitude), 'hangle_ must be a Longitude'
+        lati_rad, decl_rad, hangle_rad = lati_.rads, self.b.rads, hangle_.rads
+        azimuth_rad = atan2(sin(hangle_rad), cos(hangle_rad)*sin(lati_rad) \
+                            - tan(decl_rad)*cos(lati_rad))
+        altitude_rad = asin(sin(lati_rad)*sin(decl_rad) \
+                            + cos(lati_rad)*cos(decl_rad)*cos(hangle_rad))
+        return AltAzimuthal(Longitude(azimuth_rad),Latitude(altitude_rad))
 
     def __unicode__(self):
         return u'(\u03B1:' + self.a.hms() \
@@ -59,8 +74,7 @@ A Longitude and Latitude pair
 class Ecliptical(SphCoord):
     """
     Ecliptic to Equatorial conversion
-    Given an Ecliptical object and Obliquity of the Ecliptic as an Angle object
-    convert to an Equatorial object
+    @param epsilon_ The obliquity of the Ecliptic as an Angle object
     @return Equatorial object
     """
     def to_equatorial(self, epsilon_):
@@ -81,28 +95,13 @@ class Ecliptical(SphCoord):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
                                     'replace')
 
-""" Altitude-Azimuth (Local Horizontal) Coordinates """
-class AltAzimuthal:
-    """
-    @param lati_ The observer's geographic latitude as a Latitude object
-    @param decl_ The declination of the celestial body as a Latitude object
-    @param hangle_ The hour angle as a Longitude object
-    """
-    def __init__(self, lati_, decl_, hangle_):
-        assert isinstance(lati_, Latitude), 'lati_ must be a Latitude'
-        assert isinstance(decl_, Latitude), 'decl_ must be a Latitude'
-        assert isinstance(hangle_, Longitude), 'hangle_ must be a Longitude'
-        lati_rad, decl_rad, hangle_rad = lati_.rads, decl_.rads, hangle_.rads
-        azimuth_rad = atan2(sin(hangle_rad), cos(hangle_rad)*sin(lati_rad) \
-                            - tan(decl_rad)*cos(lati_rad))
-        altitude_rad = asin(sin(lati_rad)*sin(decl_rad) \
-                            + cos(lati_rad)*cos(decl_rad)*cos(hangle_rad))
-        self.azimuth = Longitude(azimuth_rad)
-        self.altitude = Latitude(altitude_rad)
-
+"""
+Altitude-Azimuth (Local Horizontal) Coordinates
+An Altitude and Azimuth pair
+"""
+class AltAzimuthal(SphCoord):
     def __unicode__(self):
-        return u'(A:' + self.azimuth.dms() + u', h:' + self.altitude.dms() + u')'
-
+        return u'(A:' + self.a.dms() + u', h:' + self.b.dms() + u')'
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
                                     'replace')
@@ -124,35 +123,40 @@ if __name__ == "__main__":
     print
 
     epsilon_j2000 = Angle(radians(28+(1+34.26/60.0)/60.0))
-    equa1 = Equatorial(Longitude(0),Latitude(0))
-    print equa1
-    ecli1 = equa1.to_ecliptical(epsilon_j2000)
-    print ecli1
-    print ecli1.to_equatorial(epsilon_j2000)
+    equa = Equatorial(Longitude(0),Latitude(0))
+    print equa
+    ecli = equa.to_ecliptical(epsilon_j2000)
+    print ecli
+    print ecli.to_equatorial(epsilon_j2000)
     print
 
-    equa2 = Equatorial(Longitude(pi/2),Latitude(0))
-    print equa2
-    ecli2 = equa2.to_ecliptical(epsilon_j2000)
-    print ecli2
-    print ecli2.to_equatorial(epsilon_j2000)
+    equa = Equatorial(Longitude(pi/2),Latitude(0))
+    print equa
+    ecli = equa.to_ecliptical(epsilon_j2000)
+    print ecli
+    print ecli.to_equatorial(epsilon_j2000)
     print
 
-    equa3 = Equatorial(Longitude(pi),Latitude(pi/4))
-    print equa3
-    ecli3 = equa3.to_ecliptical(epsilon_j2000)
-    print ecli3
-    print ecli3.to_equatorial(epsilon_j2000)
+    ecli = Ecliptical(Longitude(pi),Latitude(pi/4))
+    print ecli
+    equa = ecli.to_equatorial(epsilon_j2000)
+    print equa
+    print equa.to_ecliptical(epsilon_j2000)
     print
 
-    equa4 = Equatorial(Longitude(0.75*pi),Latitude(-pi/4))
-    print equa4
-    ecli4 = equa4.to_ecliptical(epsilon_j2000)
-    print ecli4
-    print ecli4.to_equatorial(epsilon_j2000)
+    ecli = Ecliptical(Longitude(0.75*pi),Latitude(-pi/4))
+    print ecli
+    equa = ecli.to_equatorial(epsilon_j2000)
+    print equa
+    print equa.to_ecliptical(epsilon_j2000)
     print
 
-    altazi = AltAzimuthal(Latitude(radians(38 + 55/60.0 + 17/3600.0)),\
-                          Latitude(-radians(6 + 43/60.0 + 11.61/3600.0)),\
-                          Longitude(radians(64.352133)))
-    print altazi
+    equa = Equatorial(
+        Longitude(0),
+        Latitude(-radians(6 + 43/60.0 + 11.61/3600.0))
+    )
+    altazi = equa.to_altazimuthal(
+        Latitude(radians(38 + 55/60.0 + 17/3600.0)),\
+        Longitude(radians(64.352133))
+    )
+    print altazi # A: 68deg 02'01.3", h: 15deg 07'29.6"
