@@ -150,10 +150,10 @@ class JulianDayNumber:
         self.jdn += (hrs + (mins + secs/60.0)/60.0)/24.0
 
     """
-    Convert the Julian Day Number to Calendar Date
+    Get the Calendar Date corresponding to the Julian Day Number
     @caution Not valid for negative JDNs
     """
-    def to_date(self):
+    def get_date(self):
         jdn = self.jdn + 0.5
         F,Z = math.modf(jdn) # Fractional, Integer parts
         A = Z # Initial value
@@ -170,6 +170,16 @@ class JulianDayNumber:
         year = C - 4715 # default
         if month > 2: year -= 1 # correction
         return Date(year, month, int(day))
+
+    """
+    Get the Time of day corresponding to the Julian Day Number
+    """
+    def get_time(self):
+        F,Z = math.modf(self.jdn-0.5) # Fractional, Integer parts
+        M,H = math.modf(F*24)
+        S,M = math.modf(M*60)
+        S  *= 60
+        return Time(int(H),int(M),S)
 
     """
     Compute the Modified JDN
@@ -227,7 +237,8 @@ if __name__ == "__main__":
     print d.is_gregorian() # Call class method
     print Date(-4712,11,12)
     jdn = JulianDayNumber(Date(1975,6,10),Time(8,18,00))
-    print jdn.to_date()
-    print jdn.to_date().weekday()
+    print jdn.get_date()
+    print jdn.get_date().weekday()
+    print jdn.get_time()
 
-    print JulianDayNumber(Date(2000,1,1), Time(12,0,0))
+    print JulianDayNumber(Date(2000,1,1), Time(12,0,0)) #JDE2000
