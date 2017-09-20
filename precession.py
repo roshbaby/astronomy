@@ -1,6 +1,6 @@
 from math import sin, cos, asin, acos, atan2, radians, pi, fabs, sqrt
 from angle import *
-from transforms import Equatorial
+from coordinates import Equatorial
 from calendar import Date, Time, JulianDayNumber
 
 """

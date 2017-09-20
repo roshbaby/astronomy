@@ -1,6 +1,6 @@
 from math import sin, cos, tan, atan2, sqrt, pi, degrees, radians, fabs
 from angle import Angle, Latitude, Longitude
-from transforms import SphCoord
+from coordinates import SphCoord
 from interpolation import Inter3polate
 
 

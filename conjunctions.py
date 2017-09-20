@@ -1,7 +1,7 @@
 from math import radians
 from calendar import Date, Time, JulianDayNumber
 from angle import Latitude, Longitude
-from transforms import SphCoord
+from coordinates import SphCoord
 from interpolation import Inter5polate
 
 # Helper functions first
