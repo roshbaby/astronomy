@@ -1,5 +1,5 @@
-from calendar import *
-from interpolation import *
+from calendar import Time
+from interpolation import LagrangeInterpolate
 
 """
 Table of (year, deltaT) tuples from 1620 to 2010 for interpolation
@@ -261,11 +261,8 @@ Chapront and Francou's *approximation*
 @return Delta T as a Time object
 """
 def deltaT(year):
-    #print '\nyear is', year
-
     table_first_year = deltaT_table[0][0]
     table_last_year = deltaT_table[len(deltaT_table)-1][0]
-    #print 'first', table_first_year, 'last', table_last_year
 
     ret_sec = 0
 
@@ -281,13 +278,10 @@ def deltaT(year):
         # Choose a slice of the table that is +/- 2 of my_index
         if my_index < 2:
             deltaT_table_slice = deltaT_table[0:5]
-            #print 'slice is 0:5'
         elif len(deltaT_table) - my_index < 3:
             deltaT_table_slice = deltaT_table[len(deltaT_table)-5:]
-            #print 'slice is', str(len(deltaT_table)-5) + ':'
         else:
             deltaT_table_slice = deltaT_table[my_index-2:my_index+3]
-            #print 'slice is', str(my_index-2) + ':' + str(my_index+3)
 
         ipol = LagrangeInterpolate(deltaT_table_slice)
         ret_sec = ipol.compute(year)
@@ -295,17 +289,14 @@ def deltaT(year):
     else:
         # Table not available. Use Chapront & Francou's approximations
         t = (year - 2000.0)/100 # Centuries after epoch 2000.0
-        #print 't is',t
 
         if (year < 948):
             ret_sec = 2177 + (497+44.1*t)*t
         else:
             ret_sec = 102 + (102 + 25.3*t)*t
-            #print 'ret_sec(1) is', ret_sec
             if year >= table_last_year and year <= 2100:
                 ret_sec += 0.37*(year-2100)
 
-    #print 'ret_sec is', ret_sec
     return Time(0,0,ret_sec)
 
 

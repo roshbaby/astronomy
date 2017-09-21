@@ -1,6 +1,7 @@
 import sys
 from math import sin, cos, tan, asin, atan2, pi, radians
-from angle import *
+from angle import Angle, Longitude, Latitude
+from constants import epsilon_j2000
 
 DEFAULT_ENCODING = 'UTF-8'
 
@@ -110,10 +111,10 @@ class AltAzimuthal(SphCoord):
 if __name__ == "__main__":
     ## Spherical Coordinate Tests
     data = [
-        (0, math.pi/2), # Not Longitudes or Latitudes
-        (Latitude(0), Latitude(math.pi/2)), # alpha is not a Longitude
-        (Longitude(0), Longitude(math.pi/2)), # delta is not a Latitude
-        (Longitude(0), Angle(math.pi/2)) # delta is not a Latitude
+        (0, pi/2), # Not Longitudes or Latitudes
+        (Latitude(0), Latitude(pi/2)), # alpha is not a Longitude
+        (Longitude(0), Longitude(pi/2)), # delta is not a Latitude
+        (Longitude(0), Angle(pi/2)) # delta is not a Latitude
     ]
     for tup in data:
         try:
@@ -122,7 +123,6 @@ if __name__ == "__main__":
             print 'Error:', e
     print
 
-    epsilon_j2000 = Angle(radians(28+(1+34.26/60.0)/60.0))
     equa = Equatorial(Longitude(0),Latitude(0))
     print equa
     ecli = equa.to_ecliptical(epsilon_j2000)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         Latitude(-radians(6 + 43/60.0 + 11.61/3600.0))
     )
     altazi = equa.to_altazimuthal(
-        Latitude(radians(38 + 55/60.0 + 17/3600.0)),\
+        Latitude(radians(38 + 55/60.0 + 17/3600.0)),
         Longitude(radians(64.352133))
     )
     print altazi # A: 68deg 02'01.3", h: 15deg 07'29.6"

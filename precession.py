@@ -1,5 +1,5 @@
 from math import sin, cos, asin, acos, atan2, radians, pi, fabs, sqrt
-from angle import *
+from angle import Longitude, Latitude
 from coordinates import Equatorial
 from calendar import Date, Time, JulianDayNumber
 from constants import epoch_j2000, julian_century
@@ -46,7 +46,7 @@ class Precession:
 
 
 if __name__ == "__main__":
-    epoch_start = JulianDayNumber(Date(2000,1,1),Time(12,0,0))
+    epoch_start = epoch_j2000
     epoch_end = JulianDayNumber(Date(2028,11,13),Time(4,28,0))
 
     prec = Precession(epoch_start, epoch_end)

@@ -1,5 +1,7 @@
-from angle import *
-from calendar import *
+from math import radians
+from angle import Longitude
+from calendar import Date, Time, JulianDayNumber
+from constants import epoch_j2000, julian_century
 
 """
 Mean Sidereal Time at Greenwich for a given UT
@@ -7,10 +9,12 @@ Mean Sidereal Time at Greenwich for a given UT
 """
 def MST(jdnumber):
     assert isinstance(jdnumber, JulianDayNumber), 'Invalid Julian Day Number'
-    T = (jdnumber.jdn - 2451545.0)/36525.0 # Number of Julian centuries
-    ret_deg = 280.46061837 + 360.98564736629*(jdnumber.jdn - 2451545.0) + \
-              (0.000387933 - T/38710000.0)*T*T
-    return Longitude(math.radians(ret_deg))
+    # Number of Julian centuries since J2000
+    T = (jdnumber.jdn - epoch_j2000.jdn)/julian_century
+    ret_deg = 280.46061837                                       \
+              + 360.98564736629*(jdnumber.jdn - epoch_j2000.jdn) \
+              + (0.000387933 - T/38710000.0)*T*T
+    return Longitude(radians(ret_deg))
 
 """
 Apparent Sidereal Time at Greenwich for a given UT

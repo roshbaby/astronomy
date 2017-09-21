@@ -1,6 +1,6 @@
 import math
 import sys
-from types import *
+from types import IntType
 from numbers import Number
 
 DEFAULT_ENCODING = 'UTF-8'
