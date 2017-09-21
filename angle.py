@@ -64,13 +64,12 @@ class Angle:
         # 1hr equals 15 degs
         hrs = math.degrees(math.fabs(self.rads))/15.0
         mns, hrs = math.modf(hrs)
-        mns *= 60
-        scs, mns = math.modf(mns)
-        scs *= 60
+        scs, mns = math.modf(mns*60)
+        scs     *= 60
         return self.__get_sign_str()           \
                + u'{0:02d}h '.format(int(hrs)) \
                + u'{0:02d}m '.format(int(mns)) \
-               + u'{0:05.2f}s'.format(scs)
+               + u'{0:06.3f}s'.format(scs)
 
     def __unicode__(self):
         return self.dms()

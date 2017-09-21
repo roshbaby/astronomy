@@ -1,8 +1,10 @@
-from math import sin, cos, tan, atan2, sqrt, pi, degrees, radians, fabs
+from math import sin, cos, tan, asin, acos, atan2, sqrt, pi, degrees, radians, fabs
 from angle import Angle, Latitude, Longitude
-from coordinates import SphCoord
+from coordinates import SphCoord, Equatorial
 from interpolation import Inter3polate
-
+from calendar import Date, Time, JulianDayNumber
+from constants import epoch_j2000, julian_year, julian_century
+from precession import Precession
 
 """
 Compute the correction due to refraction to altitude
@@ -120,8 +122,111 @@ def relative_position_angle(ref, obj):
     return Angle(rpa)
 
 
-def proper_motion_correction():
-    assert False, '@todo To Be Implemented'
+"""
+Compute the proper motion of a star over the given number of years
+@param coord The coordinates of the star as a Equatorial object at the epoch
+@param r_parsecs The radial distance to the star in parsecs
+@param v_parsecs_per_year The radial velocity of the star in parsecs/year
+@param annual_pm The annual proper motion of the star as a tuple of Angles
+@param epoch_yrs The number of years from the starting epoch
+@return The updated coordinates for the star as an Equatorial object
+"""
+def proper_motion(coord, r_parsecs, v_parsecs_per_year, annual_pm, epoch_yrs):
+    assert isinstance(coord, Equatorial), 'coord should be a Equatorial'
+    assert isinstance(annual_pm, tuple), 'annual_pm should be a tuple'
+    assert len(annual_pm) == 2, 'annual_pm should be a 2-element tuple'
+    assert isinstance(annual_pm[0], Angle) and isinstance(annual_pm[1],Angle), \
+           'annual_pm elements should be Angles'
+    alpha_0, delta_0 = coord.a.rads, coord.b.rads
+    dalpha, ddelta = annual_pm[0].rads, annual_pm[1].rads
+
+    x = r_parsecs*cos(delta_0)*cos(alpha_0) # parsecs
+    y = r_parsecs*cos(delta_0)*sin(alpha_0) # parsecs
+    z = r_parsecs*sin(delta_0)              # parsecs
+
+    dx = (x/r_parsecs)*v_parsecs_per_year - z*ddelta*cos(alpha_0) - y*dalpha
+    dy = (y/r_parsecs)*v_parsecs_per_year - z*ddelta*sin(alpha_0) + x*dalpha
+    dz = (z/r_parsecs)*v_parsecs_per_year + r_parsecs*ddelta*cos(delta_0)
+    # dx,dy,dz are in parsecs/year
+
+    x_new = x + epoch_yrs*dx # parsecs
+    y_new = y + epoch_yrs*dy # parsecs
+    z_new = z + epoch_yrs*dz # parsecs
+
+    alpha_new = atan2(y_new, x_new)
+    delta_new = atan2(z_new, sqrt(x_new**2+y_new**2))
+
+    return Equatorial(Longitude(alpha_new), Latitude(delta_new))
+
+
+"""
+Compute the proper motion using the classical method of uniform changes in
+RA and declination
+@param coord The coordinates of the star as a Equatorial object at the epoch
+@param annual_pm The annual proper motion of the star as a tuple of Angles
+@param epoch_yrs The number of years from the starting epoch
+@return The updated coordinates for the star as an Equatorial object
+"""
+def proper_motion_classical(coord, annual_pm, epoch_yrs):
+    assert isinstance(coord, Equatorial), 'coord should be a Equatorial'
+    assert isinstance(annual_pm, tuple), 'annual_pm should be a tuple'
+    assert len(annual_pm) == 2, 'annual_pm should be a 2-element tuple'
+    assert isinstance(annual_pm[0], Angle) and isinstance(annual_pm[1],Angle), \
+           'annual_pm elements should be Angles'
+    alpha_0, delta_0 = coord.a.rads, coord.b.rads
+    dalpha, ddelta = annual_pm[0].rads, annual_pm[1].rads
+    alpha_new = alpha_0 + dalpha*epoch_yrs
+    delta_new = delta_0 + ddelta*epoch_yrs
+    return Equatorial(Longitude(alpha_new), Latitude(delta_new))
+
+
+"""
+Calculate the precession in the RA and Declination at the ending epoch of a
+body given the mean coordinates at a starting epoch.
+@param coord The mean coordinates referred to epoch_start as a Equatorial object
+@param epoch_start The epoch to which the coord is referred as a
+       Julian Day Number in TD
+@param epoch_end The epoch for which the new coord is to be computed as a
+       Julian Day Number in TD
+@return The RA and Declination for epoch_end as a SphCoord object
+@caution We assume that the coord is already corrected for the proper motion of
+         the body over the epoch interval in question
+"""
+def deprecated_precession(coord, epoch_start, epoch_end):
+    assert isinstance(coord, Equatorial), 'coord must be a Equatorial'
+    assert isinstance(epoch_start, JulianDayNumber)    \
+           and isinstance(epoch_end, JulianDayNumber), \
+           'epochs much be JulianDayNumbers'
+
+    T = (epoch_start.jdn - epoch_j2000.jdn) / julian_century
+    t = (epoch_end.jdn - epoch_start.jdn) / julian_century
+
+    K = (2306.2181 + (1.39656 - 0.000139*T)*T)*t
+    t_square = t**2
+
+    zeta = K + ((0.30188 - 0.000344*T) + 0.017998*t)*t_square # arc-seconds
+    zeta = radians(zeta/3600.0)
+    zappa = K + ((1.09468 + 0.000066*T) + 0.018203*t)*t_square # arc-seconds
+    zappa = radians(zappa/3600.0)
+    theta = (2004.3109 - (0.85330 + 0.000217*T)*T)*t # arc-seconds
+    theta -= ((0.42665 + 0.000217*T) + 0.041833*t)*t_square # arc-seconds
+    theta = radians(theta/3600.0)
+
+    alpha = coord.a.rads + zeta
+    delta0 = coord.b.rads
+
+    A = cos(delta0)*sin(alpha)
+    B = cos(theta)*cos(delta0)*cos(alpha) - sin(theta)*sin(delta0)
+    C = sin(theta)*cos(delta0)*cos(alpha) + cos(theta)*sin(delta0)
+
+    alpha = zappa + atan2(A,B)
+    # If the object is close to the celestial pole
+    if fabs(delta0 - pi/2) < radians(0.5):
+        delta = acos(sqrt(A**2+B**2))
+    else:
+        delta = asin(C)
+
+    return Equatorial(Longitude(alpha), Latitude(delta))
 
 
 if __name__ == "__main__":
@@ -222,8 +327,44 @@ if __name__ == "__main__":
 
     for m,s in zip(mercury_coords,saturn_coords):
         print relative_position_angle(m,s)
+    print
 
-    try:
-        proper_motion_correction()
-    except AssertionError as e:
-        print 'Error:', e
+    # Proper Motion tests
+    # Sirius
+    coord_0 = Equatorial(Longitude(radians(101.286962)),
+                         Latitude(radians(-16.716108)))
+    annual_pm = (
+        Angle(-radians(0.03847/3600.0*15.0)),
+        Angle(-radians(1.2053/3600.0))
+    )
+    epoch_0 = 2000.0
+    epoch_targets = [1000.0, 0.0, -1000.0, -2000.0, -10000.0]
+    for epoch in epoch_targets:
+        epoch_yrs = epoch-epoch_0
+        print proper_motion(coord_0, 2.64, -7.6/977792.0, annual_pm, epoch_yrs)
+    print
+
+    # theta Persei at epoch J2000
+    epoch_start = epoch_j2000
+    epoch_target = JulianDayNumber(Date(2028,11,13),Time(4,28,0)) # 2028 Nov 13.19 TD
+    theta_persei_epoch_start = Equatorial(
+        Longitude( radians((2.0 +44.0/60.0 + 11.986/3600.0)*15) ),
+        Latitude( radians(49.0 +13.0/60.0 +42.48/3600.0) )
+    )
+    annual_pm = (
+        Angle( radians(0.03425/3600.0*15) ),
+        Angle( -radians(0.0895/3600.0) )
+    )
+    epoch_yrs = (epoch_target.jdn - epoch_start.jdn)/julian_year
+
+    theta_persei_epoch_start_pm_corrected = \
+        proper_motion_classical(theta_persei_epoch_start, annual_pm, epoch_yrs)
+    print theta_persei_epoch_start_pm_corrected # 2h44m12.975s, +49deg 13'39.90"
+    print
+
+    # Precession test
+    prec = Precession(epoch_start, epoch_target)
+    theta_persei_epoch_target = \
+        prec.apply_correction(theta_persei_epoch_start_pm_corrected)
+    print theta_persei_epoch_target # 2h46m11.331s, +49deg20'54.54"
+    print deprecated_precession(theta_persei_epoch_start_pm_corrected, epoch_start, epoch_target)

@@ -3,6 +3,7 @@ from calendar import Date, Time, JulianDayNumber
 from angle import Latitude, Longitude
 from coordinates import SphCoord
 from interpolation import Inter5polate
+import copy
 
 # Helper functions first
 """
@@ -79,7 +80,9 @@ def conjunction_with_star(dates_, star_, coords_, prec_):
     assert isinstance(star_, SphCoord), 'star_ must be a SphCoord object'
     # We assume the star's coordinates stay constant over the list of dates_
     # provided. Create a dummy list of coords corresponding to the dates_
-    star_coords = [star_ for date in dates]
+    # Use copies of the original star_ to avoid accidental pitfalls with
+    # repeated references
+    star_coords = [copy.copy(star_) for date in dates]
     return conjunction(dates_, star_coords, coords_, prec_)
 
 
