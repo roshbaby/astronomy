@@ -1,4 +1,4 @@
-import math
+from math import floor, fmod, modf, fabs
 import sys
 from types import IntType
 from numbers import Number
@@ -40,24 +40,16 @@ class Time:
         assert type(hr_) is IntType, 'hour should be integer type'
         assert type(min_) is IntType, 'minute should be integer type'
         assert isinstance(sec_, Number), 'seconds should be a Number'
-        self.hr = hr_
-        self.min = min_
-        self.sec = sec_
+        self.hr, self.min, self.sec = hr_, min_, sec_
         self.__canonical()
 
-    """
-    Reduce Time to a canonical form
-    The min and sec will always be positive in this event and bounded between
-    0 and 60.
-    The hr could be negative or positive and is unbounded
-    """
     def __canonical(self):
-        # Handle rollover or negative values for seconds
-        self.min += int(self.sec) / 60
-        self.sec = self.sec % 60
-        # Handle rollover or negative values for minutes
-        self.hr += self.min / 60
-        self.min = self.min % 60
+        """ Reduce Time to a canonical form """
+        time_in_hrs = self.hr + (self.min + self.sec/60.0)/60.0
+        m, h = modf(time_in_hrs)
+        s, m = modf(m*60)
+        s   *= 60
+        self.hr, self.min, self.sec = int(h), int(m), s
 
     def __add__(self,other):
         return Time(self.hr+other.hr, self.min+other.min, self.sec+other.sec)
@@ -80,9 +72,9 @@ class Time:
         return self
 
     def __unicode__(self):
-        return u'{0:+02d}h'.format(self.hr) \
-               + u'{0:02d}m'.format(self.min) \
-               + u'{0:05.2f}s'.format(self.sec)
+        return u'{0: 03d}h'.format(self.hr) \
+               + u'{0:02d}m'.format(abs(self.min)) \
+               + u'{0:05.2f}s'.format(fabs(self.sec))
 
     def __str__(self):
         return unicode(self).encode(sys.stdout.encoding or DEFAULT_ENCODING,
@@ -115,7 +107,7 @@ class Date:
     """ Day of the week for the Date """
     def weekday(self):
         myjdn = JulianDayNumber(self, Time(0,0,0)).jdn # Force 0h UT for the Date
-        myjdn = int(math.fmod(myjdn+1.5, 7))
+        myjdn = int(fmod(myjdn+1.5, 7))
         if myjdn < 0: myjdn += 7
         return weekdays[myjdn]
 
@@ -141,11 +133,11 @@ class JulianDayNumber:
             month += 12
         B = 0 # Default for Julian Calendar
         if date.is_gregorian():
-            A = int(math.floor(year/100.0))
-            B = 2 - A + int(math.floor(A/4.0))
+            A = int(floor(year/100.0))
+            B = 2 - A + int(floor(A/4.0))
         # JDN at 0h UT
-        self.jdn = int(math.floor(365.25*(year+4716))) \
-                   + int(math.floor(30.6001*(month+1))) + day + B - 1524.5
+        self.jdn = int(floor(365.25*(year+4716))) \
+                   + int(floor(30.6001*(month+1))) + day + B - 1524.5
         # JDN at given UT
         self.jdn += (hrs + (mins + secs/60.0)/60.0)/24.0
 
@@ -155,16 +147,16 @@ class JulianDayNumber:
     """
     def get_date(self):
         jdn = self.jdn + 0.5
-        F,Z = math.modf(jdn) # Fractional, Integer parts
+        F,Z = modf(jdn) # Fractional, Integer parts
         A = Z # Initial value
         if Z >= 2299161: # Update A
-            alpha = int(math.floor((Z-1867216.25)/36524.25))
-            A += 1 + alpha - int(math.floor(alpha/4.0))
+            alpha = int(floor((Z-1867216.25)/36524.25))
+            A += 1 + alpha - int(floor(alpha/4.0))
         B = A + 1524
-        C = int(math.floor((B-122.1)/365.25))
-        D = int(math.floor(365.25*C))
-        E = int(math.floor((B-D)/30.6001))
-        day = B - D - int(math.floor(30.6001*E)) + F
+        C = int(floor((B-122.1)/365.25))
+        D = int(floor(365.25*C))
+        E = int(floor((B-D)/30.6001))
+        day = B - D - int(floor(30.6001*E)) + F
         month = E - 1 # default
         if E >= 14: month -= 12 # correction
         year = C - 4715 # default
@@ -175,9 +167,9 @@ class JulianDayNumber:
     Get the Time of day corresponding to the Julian Day Number
     """
     def get_time(self):
-        F,Z = math.modf(self.jdn-0.5) # Fractional, Integer parts
-        M,H = math.modf(F*24)
-        S,M = math.modf(M*60)
+        F,Z = modf(self.jdn-0.5) # Fractional, Integer parts
+        M,H = modf(F*24)
+        S,M = modf(M*60)
         S  *= 60
         return Time(int(H),int(M),S)
 

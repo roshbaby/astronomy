@@ -1,4 +1,5 @@
-import math
+from math import pi, degrees, radians, fabs, modf, copysign
+from mymath import pfmod
 import sys
 from numbers import Number
 
@@ -35,7 +36,7 @@ class Angle:
         return self
 
     def __get_sign_str(self):
-        sign = math.copysign(1,self.rads) # 1 or -1
+        sign = copysign(1,self.rads) # 1 or -1
         if (self.rads == 0): signstr = u' '
         elif (sign < 0):     signstr = u'-'
         else:                signstr = u'+'
@@ -48,11 +49,10 @@ class Angle:
 
     """ Return unicode string representation in DMS form """
     def dms(self):
-        dgs = math.degrees(math.fabs(self.rads))
-        mns,dgs = math.modf(dgs)
-        mns *= 60
-        scs, mns = math.modf(mns)
-        scs *= 60
+        dgs = degrees(fabs(self.rads))
+        mns, dgs = modf(dgs)
+        scs, mns = modf(mns*60)
+        scs     *= 60
         return self.__get_sign_str()               \
                + u'{0:03d}\u00B0'.format(int(dgs)) \
                + u'{0:02d}\u2032'.format(int(mns)) \
@@ -62,9 +62,9 @@ class Angle:
     """ Return unicode string representation in HMS form """
     def hms(self):
         # 1hr equals 15 degs
-        hrs = math.degrees(math.fabs(self.rads))/15.0
-        mns, hrs = math.modf(hrs)
-        scs, mns = math.modf(mns*60)
+        hrs = degrees(fabs(self.rads))/15.0
+        mns, hrs = modf(hrs)
+        scs, mns = modf(mns*60)
         scs     *= 60
         return self.__get_sign_str()           \
                + u'{0:02d}h '.format(int(hrs)) \
@@ -84,23 +84,55 @@ Angle subclass Longitude always keeps the radians value between 0 and 2pi
 Useful for longitudes, Right Ascensions etc.
 """
 class Longitude(Angle):
+    def __add__(self, other):
+        assert isinstance(other, Longitude), 'Unsupported type for addition'
+        return Longitude(self.rads + other.rads)
+
+    def __sub__(self,other):
+        assert isinstance(other, Longitude), 'Unsupported type for subtraction'
+        return Longitude(self.rads - other.rads)
+
     """ Remove multiples of 2 pi from rads to get a value between 0 and 2 pi"""
     def canonical(self):
-        two_pis = math.pi*2
-        self.rads = math.fmod(self.rads,two_pis)
-        if self.rads < 0:
-            self.rads += two_pis
+        two_pis = 2*pi
+        self.rads = pfmod(self.rads,two_pis)
         return self
 
 
 """
-Angle subclass Latitude always keeps the radians value between -pi and pi
+Angle subclass Latitude always keeps the radians value between -pi/2 and pi/2
 Useful for latitudes, declinations, etc.
 """
 class Latitude(Angle):
-    """ Just check that the rads lie between -pi/2 and +pi/2 """
+    def __add__(self, other):
+        assert isinstance(other, Latitude), 'Unsupported type for addition'
+        return Latitude(self.rads + other.rads)
+
+    def __sub__(self,other):
+        assert isinstance(other, Latitude), 'Unsupported type for subtraction'
+        return Latitude(self.rads - other.rads)
+
+    """ Remap the rads to lie between -pi/2 and +pi/2 """
     def canonical(self):
-        assert math.fabs(self.rads) <= math.pi/2, 'Latitude cannot exceed pi/2 radians either side of 0'
+        # First mod it to lie between 0 and 2*pi
+        two_pis = 2*pi
+        self.rads = pfmod(self.rads,two_pis)
+        # Now map each quadrant so that the final result lies in -pi/2, pi/2
+        # 0 - pi/2: no change
+        # pi/2 - pi: map to range pi/2, 0
+        # pi - 3pi/2: map to range 0, -pi/2
+        # 3pi/2 - 2pi: map to range -pi/2, 0
+        if 0 <= self.rads <= pi/2:
+            pass
+        elif self.rads <= pi:
+            self.rads = pi - self.rads
+        elif self.rads <= 3*pi/2:
+            self.rads = -(self.rads - pi)
+        else: # 3*pi/2 < self.rads < 2*pi
+            self.rads -= two_pis
+
+        # Check that we did every thing right
+        assert fabs(self.rads) <= pi/2, 'Latitude should not exceed pi/2 radians either side of 0'
         return self
 
     """ Override hms to raise exception """
@@ -109,33 +141,48 @@ class Latitude(Angle):
 
 
 if __name__ == "__main__":
-    myangle = Angle(-math.radians(math.pi))
+    myangle = Angle(-radians(pi))
     print str(myangle)
     print myangle
     print myangle.rads
-    print str(Angle(math.pi))
-    print Angle(math.pi/2)
-    myangle = Angle(math.pi) + Angle(math.pi/2)
+    print str(Angle(pi))
+    print Angle(pi/2)
+    myangle = Angle(pi) + Angle(pi/2)
     print myangle
-    myangle += Angle(math.pi/2)
+    myangle += Angle(pi/2)
     print myangle
-    myangle = Angle(-2*math.pi-math.radians(30))
+    myangle = Angle(-2*pi-radians(30))
     print myangle, myangle.dms(), myangle.canonical()
     print myangle.hms()
     print Angle(0)
     print Angle(1)
     print Angle(1.0)
-    print repr(Angle(math.pi))
-    longitude = Longitude(-math.radians(math.pi))
+    print repr(Angle(pi))
+    longitude = Longitude(-radians(pi))
     print longitude
     try:
-        latitude = Latitude(-math.pi)
+        latitude = Latitude(-pi)
     except AssertionError as e:
         print 'Error:', e
 
-    latitude = Latitude(-math.pi/2)
+    latitude = Latitude(-pi/2)
     print latitude
     try:
         latitude.hms()
     except RuntimeError as e:
         print 'Error:', e
+
+    print latitude + Latitude(-pi/6) # -pi/3 (-60deg)
+
+    try:
+        latitude + longitude
+    except AssertionError as e:
+        print 'Error:', e
+
+    try:
+        longitude + latitude
+    except AssertionError as e:
+        print 'Error:', e
+
+    print Angle(pi/4) + Latitude(-pi/3) # -15deg
+    print Angle(pi/3) + Longitude(-pi/3) # +360
