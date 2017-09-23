@@ -244,17 +244,6 @@ deltaT_table = [
     (2010,  66.1)
 ]
 
-deltaT_y2k_table = [
-    (2000,  63.8),
-    (2002,  64.3),
-    (2004,  64.6),
-    (2006,  64.8),
-    (2008,  65.5),
-
-    (2010,  66.1)
-]
-
-
 """
 \Delta T = Dynamical Time (TD) - Ephemeris Time (UT)
 Chapront and Francou's *approximation*

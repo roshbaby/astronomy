@@ -193,26 +193,15 @@ def mean_equinox_solstice(year_, idx_):
 def equinox_solstice_helper(year_, idx_):
     jde_0 = mean_equinox_solstice(year_, idx_)
 
-    #print 'Y:', Y
-    #print 'jde_0:', jde_0
-    #print 'jde2000', epoch_j2000.jdn
-
     T = (jde_0 - epoch_j2000.jdn)/julian_century
     W = radians(35999.373*T - 2.47)
     dlambda = 1 + 0.0334*cos(W) + 0.0007*cos(2*W)
-
-    #print 'T:', T
-    #print 'dlambda:', dlambda
 
     S = 0.0
     for (A,B,C) in table27c:
         S += A*cos(radians(B + C*T))
 
-    #print 'S', S
-
     jde = jde_0 + (0.00001*S)/dlambda
-
-    #print 'jde:', jde
 
     jdn_to_return = JulianDayNumber(Date(year_,1,1), Time(0,0,0))
     jdn_to_return.jdn = jde # Roundabout way of creating a JDN
@@ -227,19 +216,12 @@ def equinox_solstice_iterative(year_, idx_, prec_):
     jdn_to_ret = JulianDayNumber(Date(year_,1,1), Time(0,0,0))
     jdn_to_ret.jdn = jde_0 # Hack
     while True:
-        print 'jdn', jdn_to_ret.jdn
         sun = Sun(jdn_to_ret)
-        print 'L:', degrees(sun.L)
-        print 'l_app', degrees(sun.lambda_apparent)
-        print 'R:', sun.R
         dpsi = Ecliptic(jdn_to_ret).get_dpsi_low().rads
         fk5_correction = -radians(0.09033/3600.0)
         aberration = -radians(20.4898/3600.0/sun.R)
-        #print Angle(dpsi), Angle(fk5_correction), Angle(aberration)
         lambda_app = sun.L + dpsi + fk5_correction + aberration
-        print 'lambda_app', degrees(lambda_app)%360
         dday = 58*sin(idx_*pi/2 - lambda_app)
-        print 'dday', dday
         if fabs(dday) <= fabs(prec_): break
         jdn_to_ret.jdn += dday
     return jdn_to_ret

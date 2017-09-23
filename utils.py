@@ -73,8 +73,6 @@ def least_angular_separation(coords1, coords2, precision):
         v = K*(sin(ddelta)+sin(delta1)*cos(delta1)*tan(dalpha)*tan(dalpha/2))
         u_list.append(u)
         v_list.append(v)
-    #print 'u_list:', u_list
-    #print 'v_list:', v_list
 
     # For interpolation, treat the u_list as the values of y corresponding to
     # x = -1,0,1. Ditto for v_list
@@ -88,17 +86,14 @@ def least_angular_separation(coords1, coords2, precision):
         # Determine variations in u, v
         u_ = (u_list[2]-u_list[0])/2.0 + n*u_ipol.c
         v_ = (v_list[2]-v_list[0])/2.0 + n*v_ipol.c
-        #print 'n:', n, 'u:', u, 'v:', v, 'u_:', u_, 'v_:', v_
         # Correction to n
         n_ = -(u*u_ + v*v_)/float(u_**2 + v_**2)
-        #print 'n_:', n_
         n += n_
         if fabs(n_) <= fabs(precision):
             break
     # Compute the final values of u and v
     u = u_ipol.compute(0+n)
     v = v_ipol.compute(0+n)
-    #print 'final n:', n, 'u:', u, 'v:', v
     #@todo return final 'n' as well
     return Angle(radians(sqrt(u**2+v**2)/3600))
 
