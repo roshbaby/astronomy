@@ -1,4 +1,7 @@
-from math import sin, cos, tan, asin, acos, atan2, sqrt, pi, degrees, radians, fabs
+from math import sin, cos, tan, asin, acos, atan2, sqrt, pi, degrees, radians, fabs, copysign
+from types import IntType
+from numbers import Number
+from mymath import pfmod
 from angle import Angle, Latitude, Longitude
 from coordinates import SphCoord, Equatorial
 from interpolation import Inter3polate
@@ -6,11 +9,11 @@ from calendar import Date, Time, JulianDayNumber
 from constants import epoch_j2000, julian_year, julian_century
 from precession import Precession
 
-"""
-Compute the correction due to refraction to altitude
-@param alt_ The *apparent* altitude as an Angle object
-"""
 def refraction(alti_):
+    """Compute the correction to altitude due to refraction.
+    @param alt_ The *apparent* altitude as an Angle object.
+    @return The correction to alt_ as an Angle object.
+    """
     assert isinstance(alti_, Angle), 'alti_ should be an Angle'
     alti_degs = degrees(alti_.rads)
     denom = tan(radians(alti_degs + 7.31/(alti_degs+4.4)))
@@ -19,14 +22,13 @@ def refraction(alti_):
     R -= 0.06*sin(radians(14.7*R/60+13)) # units of arc-minutes
     return Angle(radians(R/60))
 
-
-"""
-Compute the angular separation between two spherical coordinates
-Uses Thierry Pauwel's formula
-@param sph1 SphCoord for object 1
-@param sph2 SphCoord for object 2
-"""
 def angular_separation(sph1,sph2):
+    """Compute the angular separation between two spherical coordinates using
+    Thierry Pauwel's formula.
+    @param sph1 SphCoord for object 1.
+    @param sph2 SphCoord for object 2.
+    @return The angular separation as an Angle object.
+    """
     assert isinstance(sph1, SphCoord), 'sph1 must be a SphCoord'
     assert isinstance(sph2, SphCoord), 'sph2 must be a SphCoord'
 
@@ -40,15 +42,14 @@ def angular_separation(sph1,sph2):
     d = atan2(sqrt(x*x+y*y),z)
     return Angle(d)
 
-
-"""
-Computes the least angular separation between two celestial objects
-using interpolation
-@param coords1 List of 3 SphCoords for object 1 (equidistant times)
-@param coords2 List of 3 SphCoords for object 2 (equidistant times)
-@param precision The precision at which to terminate the iteration
-"""
 def least_angular_separation(coords1, coords2, precision):
+    """Compute the least angular separation between two celestial objects
+    using iteration.
+    @param coords1 List of 3 SphCoords for object 1 (equidistant times).
+    @param coords2 List of 3 SphCoords for object 2 (equidistant times).
+    @param precision The precision at which to terminate the iteration.
+    @return The least angular separation as an Angle object
+    """
     assert isinstance(coords1, list) and isinstance(coords2, list), \
            'coords must be lists'
     # CAUTION: Pythonism below!
@@ -97,14 +98,12 @@ def least_angular_separation(coords1, coords2, precision):
     #@todo return final 'n' as well
     return Angle(radians(sqrt(u**2+v**2)/3600))
 
-
-"""
-Relative Position Angle
-@param ref The SphCoord of the reference body
-@param obj The SphCoord of the object for which the RPA is to be computed
-@return Angle object corresponding to the RPA
-"""
 def relative_position_angle(ref, obj):
+    """Compute the Relative Position Angle.
+    @param ref The SphCoord of the reference body.
+    @param obj The SphCoord of the object for which the RPA is to be computed.
+    @return The RPA as an Angle object.
+    """
     assert isinstance(ref, SphCoord) and isinstance(obj, SphCoord), \
            'Arguments should be a SphCoord'
     alpha1 = obj.a.rads
@@ -116,17 +115,15 @@ def relative_position_angle(ref, obj):
     rpa = atan2(sin(dalpha), cos(delta2)*tan(delta1)-sin(delta2)*cos(dalpha))
     return Angle(rpa)
 
-
-"""
-Compute the proper motion of a star over the given number of years
-@param coord The coordinates of the star as a Equatorial object at the epoch
-@param r_parsecs The radial distance to the star in parsecs
-@param v_parsecs_per_year The radial velocity of the star in parsecs/year
-@param annual_pm The annual proper motion of the star as a tuple of Angles
-@param epoch_yrs The number of years from the starting epoch
-@return The updated coordinates for the star as an Equatorial object
-"""
 def proper_motion(coord, r_parsecs, v_parsecs_per_year, annual_pm, epoch_yrs):
+    """Compute the proper motion of a star over the given number of years.
+    @param coord The coordinates of the star as a Equatorial object at the epoch.
+    @param r_parsecs The radial distance to the star in parsecs.
+    @param v_parsecs_per_year The radial velocity of the star in parsecs/year.
+    @param annual_pm The annual proper motion of the star as a tuple of Angles.
+    @param epoch_yrs The number of years from the starting epoch.
+    @return The updated coordinates for the star as an Equatorial object.
+    """
     assert isinstance(coord, Equatorial), 'coord should be a Equatorial'
     assert isinstance(annual_pm, tuple), 'annual_pm should be a tuple'
     assert len(annual_pm) == 2, 'annual_pm should be a 2-element tuple'
@@ -153,16 +150,14 @@ def proper_motion(coord, r_parsecs, v_parsecs_per_year, annual_pm, epoch_yrs):
 
     return Equatorial(Longitude(alpha_new), Latitude(delta_new))
 
-
-"""
-Compute the proper motion using the classical method of uniform changes in
-RA and declination
-@param coord The coordinates of the star as a Equatorial object at the epoch
-@param annual_pm The annual proper motion of the star as a tuple of Angles
-@param epoch_yrs The number of years from the starting epoch
-@return The updated coordinates for the star as an Equatorial object
-"""
 def proper_motion_classical(coord, annual_pm, epoch_yrs):
+    """Compute the proper motion using the classical method of uniform changes
+    in RA and declination.
+    @param coord The coordinates of the star as a Equatorial object at the epoch.
+    @param annual_pm The annual proper motion of the star as a tuple of Angles.
+    @param epoch_yrs The number of years from the starting epoch.
+    @return The updated coordinates for the star as an Equatorial object.
+    """
     assert isinstance(coord, Equatorial), 'coord should be a Equatorial'
     assert isinstance(annual_pm, tuple), 'annual_pm should be a tuple'
     assert len(annual_pm) == 2, 'annual_pm should be a 2-element tuple'
@@ -174,20 +169,18 @@ def proper_motion_classical(coord, annual_pm, epoch_yrs):
     delta_new = delta_0 + ddelta*epoch_yrs
     return Equatorial(Longitude(alpha_new), Latitude(delta_new))
 
-
-"""
-Calculate the precession in the RA and Declination at the ending epoch of a
-body given the mean coordinates at a starting epoch.
-@param coord The mean coordinates referred to epoch_start as a Equatorial object
-@param epoch_start The epoch to which the coord is referred as a
-       Julian Day Number in TD
-@param epoch_end The epoch for which the new coord is to be computed as a
-       Julian Day Number in TD
-@return The RA and Declination for epoch_end as a SphCoord object
-@caution We assume that the coord is already corrected for the proper motion of
-         the body over the epoch interval in question
-"""
 def deprecated_precession(coord, epoch_start, epoch_end):
+    """Calculate the precession in the RA and Declination at the ending epoch
+    of a body given the mean coordinates at a starting epoch.
+    @param coord The mean coordinates referred to epoch_start as a Equatorial object
+    @param epoch_start The epoch to which the coord is referred as a
+    Julian Day Number in TD
+    @param epoch_end The epoch for which the new coord is to be computed as a
+    Julian Day Number in TD
+    @return The RA and Declination for epoch_end as a SphCoord object
+    @caution We assume that the coord is already corrected for the proper
+    motion of the body over the epoch interval in question
+    """
     assert isinstance(coord, Equatorial), 'coord must be a Equatorial'
     assert isinstance(epoch_start, JulianDayNumber)    \
            and isinstance(epoch_end, JulianDayNumber), \
@@ -222,6 +215,49 @@ def deprecated_precession(coord, epoch_start, epoch_end):
         delta = asin(C)
 
     return Equatorial(Longitude(alpha), Latitude(delta))
+
+def equation_of_kepler_iterative(M_, e_, prec_):
+    """Calculate the Eccentric anomaly from the Mean Anomaly using iteration.
+    @param M_ The Mean anomaly as a Longitude object
+    @param e_ The eccentricity of the orbit
+    @param prec_ The precision at which to stop the iteration
+    @return The Eccentric anomaly as a Longitude object
+    """
+    assert isinstance(M_, Longitude), 'M_ should be a Longitude'
+    assert isinstance(e_, Number), 'e_ should be a Number'
+    assert 0 <= e_ < 1, 'e_ should lie between 0 and 1'
+    assert isinstance(prec_, Number), 'prec_ should be a Number'
+    E = M_.rads
+    while True:
+        dE = (M_.rads + e_*sin(E) - E)/(1 - e_*cos(E))
+        E += dE
+        if fabs(dE) <= prec_: break
+    return Longitude(E)
+
+def equation_of_kepler_binarysearch(M_, e_, loop_=33):
+    """Calculate the Eccentric anomaly from the Mean Anomaly using binary search.
+    @param M_ The Mean anomaly as a Longitude object
+    @param e_ The eccentricity of the orbit
+    @param loop_ The number of times to
+    @return The Eccentric anomaly as a Longitude object
+    """
+    assert isinstance(M_, Longitude), 'M_ should be a Longitude'
+    assert isinstance(e_, Number), 'e_ should be a Number'
+    assert 0 <= e_ < 1, 'e_ should lie between 0 and 1'
+    assert type(loop_) is IntType, 'loop_ should be an integer'
+    M_ = pfmod(M_.rads,2*pi)
+    if M_ > pi:
+        sign = -1
+        M_ = 2*pi - M_
+    else:
+        sign = 1
+    E0, D = pi/2, pi/4
+    for idx in range(loop_):
+        M1 = E0 - e*sin(E0)
+        E0 += copysign(D, M_-M1)
+        D /= 2
+    E0 *= sign
+    return Longitude(E0)
 
 
 if __name__ == "__main__":
@@ -363,3 +399,12 @@ if __name__ == "__main__":
         prec.apply_correction(theta_persei_epoch_start_pm_corrected)
     print theta_persei_epoch_target # 2h46m11.331s, +49deg20'54.54"
     print deprecated_precession(theta_persei_epoch_start_pm_corrected, epoch_start, epoch_target)
+    print
+
+    # Test for Kepler's Equation
+    prec = 1e-6
+    elist = [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99 ]
+    for e in elist:
+        print degrees(equation_of_kepler_iterative(Longitude(radians(5)), e, prec).rads)
+        print degrees(equation_of_kepler_binarysearch(Longitude(radians(5)), e, 55).rads)
+    print
